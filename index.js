@@ -3,7 +3,6 @@ const {
     GatewayIntentBits, 
     MessageFlags, 
     ContainerBuilder, 
-    SectionBuilder, 
     TextDisplayBuilder, 
     SeparatorBuilder 
 } = require('discord.js');
@@ -12,7 +11,7 @@ const express = require('express');
 const app = express();
 
 // 1. KEEP RAILWAY & UPTIMEROBOT HAPPY
-app.get('/', (req, res) => res.send('System Status: Online 24/7 🚀'));
+app.get('/', (req, res) => res.status(200).send('Online'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`[Web] Listening on Port ${PORT}`));
 
@@ -38,8 +37,8 @@ client.on('messageCreate', async (message) => {
     const apiPing = Math.round(client.ws.ping);
     const botPing = Math.round(Date.now() - message.createdTimestamp);
 
-    // Use type-specific add methods — there is no generic addComponents()
     const pingContainer = new ContainerBuilder()
+        .setAccentColor(0x5865F2)
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('### 🏓 Pong!')
         )
@@ -61,5 +60,14 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// 5. LOGIN
+// 5. PREVENT CRASHES FROM KILLING THE SERVER
+process.on('unhandledRejection', (error) => {
+    console.error('[Unhandled Rejection]', error);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('[Uncaught Exception]', error);
+});
+
+// 6. LOGIN
 client.login(process.env.DISCORD_TOKEN);
