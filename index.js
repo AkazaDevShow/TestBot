@@ -10,55 +10,57 @@ const {
 const express = require('express');
 const app = express();
 
-// 1. Keep Railway & UptimeRobot Happy
-app.get('/', (req, res) => res.send('Bot is Live! 🚀'));
+// --- RAILWAY & UPTIME ROBOT ---
+app.get('/', (req, res) => res.send('Bot is Online! 🚀'));
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Railway Port: ${PORT}`));
+app.listen(PORT, () => console.log(`Active on Port: ${PORT}`));
 
-// 2. BOT SETUP (With critical Intents)
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent, // <--- MUST BE ENABLED IN PORTAL TOO
+        GatewayIntentBits.MessageContent 
     ]
 });
 
-client.once('ready', () => {
-    console.log(`✅ ${client.user.tag} is online and reading messages!`);
+client.on('ready', () => {
+    console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// 3. THE COMMAND
 client.on('messageCreate', async (message) => {
-    // CRITICAL: This log will show in Railway if the bot sees your message
-    console.log(`Message seen: ${message.content}`);
+    // This will show in your Railway logs. If you don't see this when you type, 
+    // it means the "Intent" or "Permissions" are still wrong.
+    console.log(`[Log] Message from ${message.author.tag}: ${message.content}`);
 
-    if (message.author.bot || message.content !== '-ping') return;
+    if (message.author.bot) return;
 
-    const apiPing = Math.round(client.ws.ping);
-    const botPing = Math.round(Date.now() - message.createdTimestamp);
+    // Use .toLowerCase() and .trim() to prevent small typos from breaking the command
+    if (message.content.toLowerCase().trim() === '-ping') {
+        const apiPing = Math.round(client.ws.ping);
+        const botPing = Math.round(Date.now() - message.createdTimestamp);
 
-    // Build the V2 Container
-    const pingContainer = new ContainerBuilder()
-        .setAccentColor(0x5865F2) // Discord Blurple
-        .addComponents(
-            new SectionBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('### 🏓 Pong!')
-            ),
-            new SeparatorBuilder(),
-            new SectionBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`**Latency:** \`${botPing}ms\``),
-                new TextDisplayBuilder().setContent(`**API:** \`${apiPing}ms\``)
-            )
-        );
+        // Build the V2 UI
+        const pingContainer = new ContainerBuilder()
+            .setAccentColor(0x00FF00)
+            .addComponents(
+                new SectionBuilder().addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent('### 🏓 Pong!')
+                ),
+                new SeparatorBuilder(),
+                new SectionBuilder().addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(`**Bot Speed:** \`${botPing}ms\``),
+                    new TextDisplayBuilder().setContent(`**API Delay:** \`${apiPing}ms\``)
+                )
+            );
 
-    try {
-        await message.reply({
-            components: [pingContainer],
-            flags: [MessageFlags.IsComponentsV2] 
-        });
-    } catch (err) {
-        console.error("Failed to send reply:", err);
+        try {
+            await message.reply({
+                components: [pingContainer],
+                flags: [MessageFlags.IsComponentsV2] 
+            });
+        } catch (err) {
+            console.error("Reply error:", err);
+        }
     }
 });
 
