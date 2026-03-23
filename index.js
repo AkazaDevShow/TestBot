@@ -10,60 +10,56 @@ const {
 const express = require('express');
 const app = express();
 
-// 1. RAILWAY & UPTIME ROBOT FIX
-// This server makes your 'up.railway.app' link work.
-app.get('/', (req, res) => {
-    res.send('Bot Status: 24/7 Online 🚀');
-});
-
-// Railway provides the PORT variable automatically.
+// 1. Keep Railway & UptimeRobot Happy
+app.get('/', (req, res) => res.send('Bot is Live! 🚀'));
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Web server active on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Railway Port: ${PORT}`));
 
-// 2. BOT SETUP
+// 2. BOT SETUP (With critical Intents)
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent, // <--- MUST BE ENABLED IN PORTAL TOO
     ]
 });
 
 client.once('ready', () => {
-    console.log(`Success! Logged in as ${client.user.tag}`);
+    console.log(`✅ ${client.user.tag} is online and reading messages!`);
 });
 
-// 3. -PING COMMAND (COMPONENTS V2 STYLE)
+// 3. THE COMMAND
 client.on('messageCreate', async (message) => {
+    // CRITICAL: This log will show in Railway if the bot sees your message
+    console.log(`Message seen: ${message.content}`);
+
     if (message.author.bot || message.content !== '-ping') return;
 
     const apiPing = Math.round(client.ws.ping);
     const botPing = Math.round(Date.now() - message.createdTimestamp);
 
-    // Building the new UI Container
+    // Build the V2 Container
     const pingContainer = new ContainerBuilder()
-        .setAccentColor(0x00FF00) // Green bar on the side
+        .setAccentColor(0x5865F2) // Discord Blurple
         .addComponents(
-            // Header Section
             new SectionBuilder().addTextDisplayComponents(
                 new TextDisplayBuilder().setContent('### 🏓 Pong!')
             ),
-            // Divider Line
             new SeparatorBuilder(),
-            // Stats Section
             new SectionBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`**Bot Speed:** \`${botPing}ms\``),
-                new TextDisplayBuilder().setContent(`**Discord API:** \`${apiPing}ms\``)
+                new TextDisplayBuilder().setContent(`**Latency:** \`${botPing}ms\``),
+                new TextDisplayBuilder().setContent(`**API:** \`${apiPing}ms\``)
             )
         );
 
-    // Sending with the mandatory IS_COMPONENTS_V2 flag
-    await message.reply({
-        components: [pingContainer],
-        flags: [MessageFlags.IsComponentsV2] 
-    });
+    try {
+        await message.reply({
+            components: [pingContainer],
+            flags: [MessageFlags.IsComponentsV2] 
+        });
+    } catch (err) {
+        console.error("Failed to send reply:", err);
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);
