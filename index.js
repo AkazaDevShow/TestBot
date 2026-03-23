@@ -1,12 +1,20 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    MessageFlags, 
+    ContainerBuilder, 
+    SectionBuilder, 
+    TextDisplayBuilder, 
+    SeparatorBuilder 
+} = require('discord.js');
 const express = require('express');
 const app = express();
 
-// 1. Web Server for UptimeRobot
+// 1. Railway & UptimeRobot Fix
 app.get('/', (req, res) => res.send('Bot is Online! 🚀'));
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
-// 2. Bot Setup
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -16,25 +24,33 @@ const client = new Client({
 });
 
 client.on('messageCreate', async (message) => {
-    // Ignore bots and check for -ping
-    if (message.author.bot || !message.content.startsWith('-ping')) return;
+    if (message.author.bot || message.content !== '-ping') return;
 
-    // Calculate Latency
-    const botPing = Math.round(client.ws.ping);
-    
-    // Create the New Embed
-    const pingEmbed = new EmbedBuilder()
-        .setColor(0x0099FF)
-        .setTitle('🏓 Pong!')
-        .addFields(
-            { name: 'Bot Latency', value: `${botPing}ms`, inline: true },
-            { name: 'API Latency', value: `${Math.round(Date.now() - message.createdTimestamp)}ms`, inline: true }
-        )
-        .setTimestamp()
-        .setFooter({ text: 'Railway Hosting 24/7' });
+    const apiPing = Math.round(client.ws.ping);
+    const botPing = Math.round(Date.now() - message.createdTimestamp);
 
-    // Send the message
-    await message.reply({ embeds: [pingEmbed] });
+    // 2. Build the Components V2 Layout
+    const pingContainer = new ContainerBuilder()
+        .setAccentColor(0x00FF00) // Green Sidebar
+        .addComponents(
+            // Header Section
+            new SectionBuilder().addTextDisplayComponents(
+                new TextDisplayBuilder().setContent('## 🏓 Pong!')
+            ),
+            // Divider
+            new SeparatorBuilder(),
+            // Stats Section
+            new SectionBuilder().addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`**Bot Latency:** \`${botPing}ms\``),
+                new TextDisplayBuilder().setContent(`**API Latency:** \`${apiPing}ms\``)
+            )
+        );
+
+    // 3. Send using the IS_COMPONENTS_V2 Flag
+    await message.reply({
+        components: [pingContainer],
+        flags: [MessageFlags.IsComponentsV2] // CRITICAL: This enables the new UI
+    });
 });
 
 client.login(process.env.DISCORD_TOKEN);
