@@ -10,11 +10,19 @@ const {
 const express = require('express');
 const app = express();
 
-// 1. Railway & UptimeRobot Fix
-app.get('/', (req, res) => res.send('Bot is Online! 🚀'));
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+// 1. RAILWAY & UPTIME ROBOT FIX
+// This server makes your 'up.railway.app' link work.
+app.get('/', (req, res) => {
+    res.send('Bot Status: 24/7 Online 🚀');
+});
 
+// Railway provides the PORT variable automatically.
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Web server active on port ${PORT}`);
+});
+
+// 2. BOT SETUP
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -23,33 +31,38 @@ const client = new Client({
     ]
 });
 
+client.once('ready', () => {
+    console.log(`Success! Logged in as ${client.user.tag}`);
+});
+
+// 3. -PING COMMAND (COMPONENTS V2 STYLE)
 client.on('messageCreate', async (message) => {
     if (message.author.bot || message.content !== '-ping') return;
 
     const apiPing = Math.round(client.ws.ping);
     const botPing = Math.round(Date.now() - message.createdTimestamp);
 
-    // 2. Build the Components V2 Layout
+    // Building the new UI Container
     const pingContainer = new ContainerBuilder()
-        .setAccentColor(0x00FF00) // Green Sidebar
+        .setAccentColor(0x00FF00) // Green bar on the side
         .addComponents(
             // Header Section
             new SectionBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('## 🏓 Pong!')
+                new TextDisplayBuilder().setContent('### 🏓 Pong!')
             ),
-            // Divider
+            // Divider Line
             new SeparatorBuilder(),
             // Stats Section
             new SectionBuilder().addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`**Bot Latency:** \`${botPing}ms\``),
-                new TextDisplayBuilder().setContent(`**API Latency:** \`${apiPing}ms\``)
+                new TextDisplayBuilder().setContent(`**Bot Speed:** \`${botPing}ms\``),
+                new TextDisplayBuilder().setContent(`**Discord API:** \`${apiPing}ms\``)
             )
         );
 
-    // 3. Send using the IS_COMPONENTS_V2 Flag
+    // Sending with the mandatory IS_COMPONENTS_V2 flag
     await message.reply({
         components: [pingContainer],
-        flags: [MessageFlags.IsComponentsV2] // CRITICAL: This enables the new UI
+        flags: [MessageFlags.IsComponentsV2] 
     });
 });
 
