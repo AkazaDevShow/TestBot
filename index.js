@@ -12,8 +12,11 @@ const app = express();
 
 // 1. KEEP RAILWAY & UPTIMEROBOT HAPPY
 app.get('/', (req, res) => res.status(200).send('Online'));
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`[Web] Listening on Port ${PORT}`));
+
+// '0.0.0.0' is required for Railway to route traffic to your app
+app.listen(PORT, '0.0.0.0', () => console.log(`[Web] Listening on Port ${PORT}`));
 
 // 2. INITIALIZE CLIENT
 const client = new Client({
@@ -38,7 +41,6 @@ client.on('messageCreate', async (message) => {
     const botPing = Math.round(Date.now() - message.createdTimestamp);
 
     const pingContainer = new ContainerBuilder()
-        .setAccentColor(0x5865F2)
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('### 🏓 Pong!')
         )
@@ -69,5 +71,9 @@ process.on('uncaughtException', (error) => {
     console.error('[Uncaught Exception]', error);
 });
 
-// 6. LOGIN
-client.login(process.env.DISCORD_TOKEN);
+// 6. LOGIN — make sure DISCORD_TOKEN is set in Railway environment variables
+if (!process.env.DISCORD_TOKEN) {
+    console.error('[Fatal] DISCORD_TOKEN is not set! Bot will not login.');
+} else {
+    client.login(process.env.DISCORD_TOKEN);
+}
