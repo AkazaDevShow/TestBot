@@ -2,14 +2,8 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express'); // Add this line
 const app = express(); // Add this line
 
-// 1. Setup the Web Server
-app.get('/', (req, res) => {
-  res.send('Bot is Online! 🚀');
-});
-
-app.listen(3000, () => {
-  console.log('Web server is running on port 3000');
-});
+app.get('/', (req, res) => res.send('Bot is alive!'));
+app.listen(process.env.PORT || 3000); // Railway will provide the PORT automatically
 
 // 2. Your Bot Logic
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
