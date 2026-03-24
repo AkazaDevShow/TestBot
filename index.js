@@ -18,11 +18,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─── ENV VARS ────────────────────────────────────────────────────────────────
-const TARGET_GUILD_ID    = process.env.TARGET_GUILD_ID    || '1485278223800471672';
-const AUTO_ROLE_ID       = process.env.AUTO_ROLE_ID       || '1485756302423756991';
-const ROLE_LOG_CHANNEL   = process.env.ROLE_LOG_CHANNEL   || '1485766448893661284';
-const VOICE_CHANNEL_ID   = process.env.VOICE_CHANNEL_ID   || '1485754693987598468';
-const VOICE_CHANNEL_NAME = process.env.VOICE_CHANNEL_NAME || '👥┃Much';
+const TARGET_GUILD_ID  = process.env.TARGET_GUILD_ID  || '1485278223800471672';
+const AUTO_ROLE_ID     = process.env.AUTO_ROLE_ID     || '1485756302423756991';
+const ROLE_LOG_CHANNEL = process.env.ROLE_LOG_CHANNEL || '1485766448893661284';
+const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID || '1485754693987598468';
 
 // ─── WEB DASHBOARD ───────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
@@ -295,7 +294,7 @@ app.get('/', (req, res) => {
       <div class="stat"><div class="stat-val accent" id="stat-vc">5:00</div><div class="stat-label">VC RENAME</div></div>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="vc-progress" style="width:100%"></div></div>
-    <div class="vc-timer" id="vc-text">Voice channel renames every 5 minutes → 👥┃Much</div>
+    <div class="vc-timer" id="vc-text">Voice channel shows live member count (no bots) every 5 min → 👥┃ 42</div>
   </div>
 
   <!-- Message Builder -->
@@ -562,7 +561,7 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => console.log(`[Web] Listening on Port ${PORT}`));
 
 // ─── INITIALIZE CLIENT ────────────────────────────────────────────────────────
@@ -581,15 +580,27 @@ client.once('clientReady', (c) => {
     startVoiceChannelRename();
 }); 
 
-// ─── VOICE CHANNEL AUTO-RENAME (every 5 min) ──────────────────────────────────
+// ─── VOICE CHANNEL AUTO-RENAME (every 5 min) — shows real member count (no bots) ──
 function startVoiceChannelRename() {
     const rename = async () => {
         try {
-            const channel = await client.channels.fetch(VOICE_CHANNEL_ID);
+            const guild = client.guilds.cache.get(TARGET_GUILD_ID);
+            if (!guild) return console.error('[VoiceRename] Guild not found');
+
+            // Fetch all members to get accurate count
+            await guild.members.fetch();
+            const memberCount = guild.members.cache.filter(m => !m.user.bot).size;
+            const newName = `👥┃ ${memberCount}`;
+
+            const channel = guild.channels.cache.get(VOICE_CHANNEL_ID)
+                || await client.channels.fetch(VOICE_CHANNEL_ID).catch(() => null);
             if (!channel) return console.error('[VoiceRename] Channel not found');
-            if (channel.name !== VOICE_CHANNEL_NAME) {
-                await channel.setName(VOICE_CHANNEL_NAME);
-                console.log(`[VoiceRename] Renamed to "${VOICE_CHANNEL_NAME}"`);
+
+            if (channel.name !== newName) {
+                await channel.setName(newName);
+                console.log(`[VoiceRename] Renamed to "${newName}" (${memberCount} members)`);
+            } else {
+                console.log(`[VoiceRename] Name unchanged: "${newName}"`);
             }
         } catch (err) {
             console.error('[VoiceRename] Error:', err.message);
@@ -598,7 +609,7 @@ function startVoiceChannelRename() {
 
     rename(); // Run immediately on startup
     setInterval(rename, 5 * 60 * 1000); // Then every 5 minutes
-    console.log(`[VoiceRename] Will rename channel ${VOICE_CHANNEL_ID} every 5 min → "${VOICE_CHANNEL_NAME}"`);
+    console.log(`[VoiceRename] Tracking member count on channel ${VOICE_CHANNEL_ID} every 5 min`);
 }
 
 // ─── AUTO-ROLE ON JOIN ────────────────────────────────────────────────────────
